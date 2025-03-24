@@ -1,0 +1,69 @@
+<html>
+<head>
+    <title>Residuals</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: #f4f4f4;
+            padding: 50px;
+        }
+        h1 {
+            color: #222;
+        }
+        .image-container {
+            overflow: hidden;
+            display: inline-block;
+            position: relative;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            cursor: grab;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            transform-origin: center;
+            transition: transform 0.2s ease-out;
+        }
+        a:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Scatter Plot of Residuals (Errors)</h1>
+    <div class="image-container">
+        <img id="zoomable-image" src="residuals.png" alt="Yield Bar Graph">
+    </div>
+
+    <script>
+        let img = document.getElementById("zoomable-image");
+        let scale = 1;
+        let panning = false;
+        let startX, startY, imgX = 0, imgY = 0;
+        img.addEventListener("wheel", function(event) {
+            event.preventDefault();
+            let zoomFactor = event.deltaY > 0 ? 0.9 : 1.1;
+            scale = Math.min(Math.max(scale * zoomFactor, 1), 4);
+            img.style.transform = `scale(${scale}) translate(${imgX}px, ${imgY}px)`;
+        });
+        img.addEventListener("mousedown", function(event) {
+            event.preventDefault();
+            panning = true;
+            startX = event.clientX - imgX;
+            startY = event.clientY - imgY;
+        });
+        document.addEventListener("mouseup", function() {
+            panning = false;
+        });
+        document.addEventListener("mousemove", function(event) {
+            if (!panning) return;
+            imgX = event.clientX - startX;
+            imgY = event.clientY - startY;
+            img.style.transform = `scale(${scale}) translate(${imgX}px, ${imgY}px)`;
+        });
+    </script>
+    <br><br>
+    <a href="index.html">Back to Home</a>
+</body>
+</html>

@@ -1,44 +1,65 @@
-<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Odisha Yield Prediction Maps</title>
+    <title>Odisha Yield Prediction</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             text-align: center;
+            background: linear-gradient(135deg, #f4f4f4, #e0e0e0);
             padding: 50px;
-            background-color: #f4f4f4;
+            transition: background 0.3s ease;
         }
         h1 {
-            color: #333;
+            color: #222;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
         }
-        .container {
-            margin-top: 20px;
+        table {
+            margin: auto;
+            border-collapse: collapse;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        td {
+            padding: 10px;
         }
         a {
-            display: block;
-            margin: 15px auto;
-            padding: 15px;
-            width: 250px;
-            background-color: #007bff;
+            display: inline-block;
+            padding: 15px 25px;
+            margin: 5px;
+            width: 260px;
+            background: #007bff;
             color: white;
-            text-decoration: none;
-            border-radius: 5px;
             font-size: 18px;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: background 0.3s, transform 0.2s;
         }
         a:hover {
-            background-color: #0056b3;
+            background: #0056b3;
+            transform: scale(1.05);
         }
     </style>
 </head>
 <body>
-    <h1>Odisha Yield Prediction Maps</h1>
-    <div class="container">
-        <a href="rice_yield_map.html" target="_self">View Rice Yield Map</a>
-        <a href="cereals_yield_map.html" target="_self">View Cereals Yield Map</a>
-        <a href="grain_yield_map.html" target="_self">View Grain Yield Map</a>
-    </div>
+    <h1>Odisha Yield Prediction</h1>
+    <table>
+        <tr>
+            <td><a href="rice_yield_map.html" target="_self">View Rice Yield Map</a></td>
+        </tr>
+        <tr>
+            <td><a href="cereals_yield_map.html" target="_self">View Cereals Yield Map</a></td>
+        </tr>
+        <tr>
+            <td><a href="grain_yield_map.html" target="_self">View Grain Yield Map</a></td>
+        </tr>
+        <tr>
+            <td><a href="bar_graph.html" target="_self">View Bar Graph</a></td>
+        </tr>
+        <tr>
+            <td><a href="residuals.html" target="_self">View Residuals</a></td>
+        </tr>
+    </table>
 </body>
 </html>

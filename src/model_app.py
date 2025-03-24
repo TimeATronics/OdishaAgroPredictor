@@ -35,19 +35,23 @@ class MapViewer(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("Odisha Yield Prediction Maps")
-        self.setGeometry(100, 100, 1024, 768)
-
+        self.setGeometry(100, 100, 500, 500)
+        self.center_window()
         self.web_view = QWebEngineView()
         self.setCentralWidget(self.web_view)
-
         self.load_page("index.html")
-
         menu_bar = self.menuBar()
         file_menu = menu_bar.addMenu("Options")
-
         back_action = QAction("Back to Home", self)
         back_action.triggered.connect(lambda: self.load_page("index.html"))
         file_menu.addAction(back_action)
+
+    def center_window(self):
+        screen = QApplication.primaryScreen().geometry()
+        window_size = self.geometry()
+        x = (screen.width() - window_size.width()) // 2
+        y = (screen.height() - window_size.height()) // 2
+        self.move(x, y)
 
     def load_page(self, file_name):
         abs_path = os.path.abspath(file_name)
@@ -83,6 +87,7 @@ targets = {
 
 predictions_2026 = {"rice": {}, "cereals": {}, "grain": {}}
 metrics_data = []
+future_inputs = {}
 
 for district in districts:
     corrected_district = district_mapping.get(district, district)
@@ -98,20 +103,18 @@ for district in districts:
     for crop, target_cols in targets.items():
         Y = df[target_cols]
         X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
-        
         model = LinearRegression()
         model.fit(X_train, Y_train)
-
         Y_pred = model.predict(X_test)
         mae = mean_absolute_error(Y_test, Y_pred)
         mse = mean_squared_error(Y_test, Y_pred)
         r2 = r2_score(Y_test, Y_pred)
-        adj_r2 = 1 - (1 - r2) * ((len(Y_test) - 1) / (len(Y_test) - X_test.shape[1] - 1))
-        
+        adj_r2 = 1 - (1 - r2) * ((len(Y_test) - 1) / (len(Y_test) - X_test.shape[1] - 1))        
         metrics_data.append([district, crop, mae, mse, r2, adj_r2])
-
-        future_data = pd.DataFrame({col: [df[col].mean() * np.random.uniform(0.9, 1.1)] for col in features})
-        future_data["calamity_severity"] = [0]
+        generated_inputs = {col: df[col].mean() * np.random.uniform(0.9, 1.1) for col in features}
+        generated_inputs["calamity_severity"] = 5
+        future_inputs[district] = generated_inputs
+        future_data = pd.DataFrame([generated_inputs])
         future_yield = model.predict(future_data)        
         predictions_2026[crop][district] = np.maximum(0, future_yield.flatten())
 
@@ -133,17 +136,46 @@ def create_map(crop, title, file_name):
         odisha_map["total_production"].min(), odisha_map["total_production"].max()
     ).to_step(10)
     colormap.caption = title
-    
+
     def style_function(feature):
         district_name = feature["properties"]["district"]
-        production_value = pred_dfs[crop].loc[district_name, "total_production"] if district_name in pred_dfs[crop].index else None
-        color = colormap(production_value) if production_value else "#d3d3d3"
+        if district_name in pred_dfs[crop].index:
+            production_value = pred_dfs[crop].loc[district_name, "total_production"]
+            color = colormap(production_value) if production_value else "#d3d3d3"
+        else:
+            color = "#d3d3d3"
         return {"fillColor": color, "color": "black", "weight": 0.5, "fillOpacity": 0.7}
 
     folium.GeoJson(
-        odisha_map, style_function=style_function,
-        tooltip=folium.GeoJsonTooltip(fields=["district", "total_production"])
+        odisha_map, 
+        style_function=style_function
     ).add_to(m)
+
+    for _, row in odisha_map.iterrows():
+        district_name = row["district"]
+        if district_name in pred_dfs[crop].index:
+            production_value = pred_dfs[crop].loc[district_name, "total_production"]
+            if district_name in future_inputs:
+                area_value = future_inputs[district_name]["rice_area_kharif"] + future_inputs[district_name]["rice_area_rabi"]
+                rain_value = (future_inputs[district_name]["rain_kharif"] + future_inputs[district_name]["rain_rabi"]) / 2
+                temp_value = (future_inputs[district_name]["Mean_Temp_Kharif"] + future_inputs[district_name]["Mean_Temp_Rabi"]) / 2
+            else:
+                area_value, rain_value, temp_value = "N/A", "N/A", "N/A"
+
+            folium.Marker(
+                location=[row.geometry.centroid.y, row.geometry.centroid.x],
+                popup=folium.Popup(f"""
+                    <div style="font-size: 14px; padding: 10px; width: 200px;">
+                        <b>District: {district_name}</b><br><br>
+                        Total Yield: {production_value:.2f} kg/ha <br>
+                        Input Area: {area_value:.2f} ha <br>
+                        Input Rain: {rain_value:.2f} mm <br>
+                        Input Temperature: {temp_value:.2f} °C
+                    </div>
+                """, max_width=300),
+                icon=folium.Icon(color="blue", icon="info-sign")
+            ).add_to(m)
+
     colormap.add_to(m)
     m.save(file_name)
 
@@ -164,7 +196,7 @@ plt.ylabel("Predicted Total Production (kg/ha)")
 plt.title("Predicted Crop Production by District for 2026")
 plt.legend()
 plt.tight_layout()
-plt.show()
+plt.savefig("distribution.png")
 
 plt.figure(figsize=(10, 6))
 for crop, df in pred_dfs.items():
@@ -179,7 +211,7 @@ plt.xlabel("Actual Values (10 years)")
 plt.ylabel("Residuals (Actual - Predicted)")
 plt.title("Residual Plot for Predicted Yield")
 plt.grid()
-plt.show(block=False)
+plt.savefig("residuals.png")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
